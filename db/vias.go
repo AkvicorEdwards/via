@@ -346,6 +346,7 @@ func (w *Walk) VerifyMD5(filename string, f *File) {
 		defer func() {
 			<-w.MaxRoutineNum
 		}()
+		log.Printf("Calculate MD5 [%s]\n", filename)
 		md5, err := util.MD5File(filename)
 		if err != nil {
 			w.File.DamagedAdd(f.Fid)
@@ -368,6 +369,7 @@ func (w *Walk) VerifySHA256(filename string, f *File) {
 		defer func() {
 			<-w.MaxRoutineNum
 		}()
+		log.Printf("Calculate SHA256 [%s]\n", filename)
 		sha256, err := util.SHA256File(filename)
 		if err != nil {
 			w.File.DamagedAdd(f.Fid)

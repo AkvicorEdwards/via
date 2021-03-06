@@ -120,7 +120,7 @@ func fileUpload(w http.ResponseWriter, r *http.Request) {
 			}()
 			S := func(str interface{}) string {return fmt.Sprint(str)}
 			filePath = fp.Pid
-			filename = fp.Size
+			filename = fp.Filename
 			fullPath := path.Join(def.Path, S(filePath))
 			if stat := util.FileStat(fullPath); stat != 1 {
 				if stat == 2 {
@@ -255,16 +255,23 @@ function mbar(sobj) {
 	tplHead += fmt.Sprintf("<h3>%s</h3>", func() string {
 		id := pid
 		res := ""
+		deadLoop := false
 		for {
 			p := db.GetPathInfo(id)
 			if p == nil {
 				break
 			}
-			if p.Pid == curPath.Pid {
-				break
-			}
 			res = fmt.Sprintf(`<a href="/?p=%d" style="color:black;">%s</a>/%s`, p.Pid, p.Title, res)
 			id = p.Ppid
+			// parent is self
+			if p.Pid == p.Ppid {
+				break
+			}
+			// dead loop
+			if deadLoop && p.Pid == curPath.Pid {
+				break
+			}
+			deadLoop = true
 		}
 		return res
 	}())

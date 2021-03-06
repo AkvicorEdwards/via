@@ -164,12 +164,22 @@ func CompleteDelFile(fid int64) bool {
 	file := &File{}
 	err := db.Table(TableFile).Where("fid=?", fid).First(file).Error
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 	DelRelationByFile(fid)
-	_ = os.Remove(path.Join(def.Path, fmt.Sprint(file.Filepath), fmt.Sprint(file.Filename)))
-	_ = DecreaseFilePathSize(file.Filepath)
-	db.Table(TableFile).Where("fid=?", fid).Delete(file)
+	err = os.Remove(path.Join(def.Path, fmt.Sprint(file.Filepath), fmt.Sprint(file.Filename)))
+	if err != nil {
+		log.Println(err)
+	}
+	err = DecreaseFilePathSize(file.Filepath)
+	if err != nil {
+		log.Println(err)
+	}
+	err = db.Table(TableFile).Where("fid=?", fid).Delete(file).Error
+	if err != nil {
+		log.Println(err)
+	}
 
 	return true
 }

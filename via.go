@@ -89,6 +89,16 @@ func EnableOption() {
 		def.RecordEnableFile = false
 		return nil
 	})
+	command("delete", 1, func(str []string) error {
+		fid, err := strconv.ParseInt(str[1], 10, 64)
+		if err != nil {
+			return err
+		}
+		res := db.CompleteDelFile(fid)
+		fmt.Printf("Result: [%v]\n", res)
+		os.Exit(0)
+		return nil
+	})
 	m5 := false
 	s6 := false
 	cl := false

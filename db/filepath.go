@@ -13,15 +13,21 @@ type FilePath struct {
 	Size       int64
 }
 
+type ResFilePath struct {
+	FilePath
+	Filename int64
+}
+
 type FilePaths []FilePath
 
-func CalculateFilePath() *FilePath {
+func CalculateFilePath() *ResFilePath {
 	if !Connected {
 		Connect()
 	}
 	lockFilePath.Lock()
 	defer lockFilePath.Unlock()
 	filepath := &FilePath{}
+	resFilePath := &ResFilePath{}
 	err := db.Table(TableFilePath).Where("size<?", def.MaximumFilesPerDirectory).First(filepath).Error
 	if err != nil {
 		filepath = &FilePath{
@@ -33,15 +39,42 @@ func CalculateFilePath() *FilePath {
 			return nil
 		}
 		UpdateInc(TableFilePath, filepath.Pid)
+		resFilePath.Pid = filepath.Pid
+		resFilePath.Size = filepath.Size
+		resFilePath.Filename = filepath.Size
 	} else {
-		filepath.Size += 1
-		err = db.Table(TableFilePath).Where("pid=?", filepath.Pid).Update("size", filepath.Size).Error
-		if err != nil {
-			log.Println(err)
-			return nil
+		fis := GetFileInfosByFilepath(filepath.Pid)
+		if fis == nil {
+			filepath.Size += 1
+			err = db.Table(TableFilePath).Where("pid=?", filepath.Pid).Update("size", filepath.Size).Error
+			if err != nil {
+				log.Println(err)
+				return nil
+			}
+			resFilePath.Pid = filepath.Pid
+			resFilePath.Size = filepath.Size
+			resFilePath.Filename = filepath.Size
+		} else {
+			mp := map[int64]bool{}
+			for _, v := range *fis {
+				mp[v.Filename] = true
+			}
+			for i := int64(1); i <= int64(def.MaximumFilesPerDirectory); i++ {
+				if _, ok := mp[i]; !ok {
+					resFilePath.Pid = filepath.Pid
+					resFilePath.Size = filepath.Size + 1
+					resFilePath.Filename = i
+					err = db.Table(TableFilePath).Where("pid=?", filepath.Pid).Update("size", filepath.Size+1).Error
+					if err != nil {
+						log.Println(err)
+						return nil
+					}
+					break
+				}
+			}
 		}
 	}
-	return filepath
+	return resFilePath
 }
 
 func DecreaseFilePathSize(pid int64) error {
