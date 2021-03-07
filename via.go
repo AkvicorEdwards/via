@@ -81,6 +81,10 @@ func EnableOption() {
 		def.DeleteButton = false
 		return nil
 	})
+	option("-button-edit", 0, func(str []string) error {
+		def.EditButton = false
+		return nil
+	})
 	option("-record-off", 0, func(str []string) error {
 		def.RecordEnable = false
 		return nil

@@ -24,7 +24,7 @@ import (
 func fileGet(w http.ResponseWriter, r *http.Request) {
 	fid, err := strconv.ParseInt(r.FormValue("f"), 10, 64)
 	if err != nil {
-		log.Println("1",err)
+		log.Println(err)
 		return
 	}
 	fileInfo := db.GetFileInfo(fid)
@@ -60,6 +60,78 @@ func fileGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", "filename=\""+fileInfo.Title+"\"")
 	http.ServeContent(w, r, fileInfo.Title, time.Now(), file)
 	return
+}
+
+func fileInfoEdit(w http.ResponseWriter, r *http.Request) {
+	fid, err := strconv.ParseInt(r.FormValue("f"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fileInfo := db.GetFileInfo(fid)
+	if fileInfo == nil {
+		log.Println(err)
+		return
+	}
+	res := WritePermit(w, r, fileInfo)
+	if res < 0 {
+		return
+	}
+	fileInfo.Title = r.FormValue("title")
+	fileInfo.Comment = r.FormValue("comment")
+	fileInfo.MD5 = r.FormValue("md5")
+	fileInfo.SHA256 = r.FormValue("sha256")
+	fileInfo.Size = Int64(r.FormValue("size"))
+	fileInfo.Password = r.FormValue("password")
+	fileInfo.Permission = permission.ParseString(r.FormValue("permission"))
+	fileInfo.Priority = Int64(r.FormValue("priority"))
+	if db.UpdateFileInfo(fileInfo) {
+		Fprint(w, TplRedirect("/"))
+	} else {
+		Fprint(w, TplConfirmRedirect("Failed", "/", "/"))
+	}
+	return
+}
+
+func fileInfoEditPage(w http.ResponseWriter, r *http.Request) {
+	fid, err := strconv.ParseInt(r.FormValue("f"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fi := db.GetFileInfo(fid)
+	if fi == nil {
+		log.Println(err)
+		return
+	}
+	res := WritePermit(w, r, fi)
+	if res < 0 {
+		return
+	}
+	pwd := ""
+	if len(r.FormValue("pwd")) != 0 {
+		pwd = fmt.Sprintf(`<input type="hidden" name="pwd" value="%s">`, r.FormValue("pwd"))
+	}
+	tpl := `<!DOCTYPE html>
+<title>File Info Update</title>
+
+<form action="/update/info/file" method="post">
+	<input type="hidden" name="f" value="%d">
+	%s
+	<label>Title:<input type="text" name="title" placeholder="Title" value="%s"></label><br/><br/>
+	<label>MD5:<input type="text" name="md5" placeholder="MD5" value="%s"></label><br/><br/>
+	<label>SHA256:<input type="text" name="sha256" placeholder="SHA256" value="%s"></label><br/><br/>
+	<label>Size:<input type="number" name="size" placeholder="Size" value="%d"></label><br/><br/>
+	<label>Password:<input type="password" name="password" placeholder="Password" value="%s"></label><br/><br/>
+	<label>Permission:<input type="text" name="permission" placeholder="Root Public Private Protected Login" value="%s"></label><br/><br/>
+	<label>Priority:<input type="number" name="priority" value="%d"></label><br/><br/>
+	<label><textarea name="comment" rows="10" cols="20">%s</textarea></label><br/><br/>
+	<input type="submit" value="Submit">
+</form>
+`
+	Fprintf(w, tpl, fid, pwd, fi.Title, fi.MD5, fi.SHA256, fi.Size, fi.Password, permission.ToString(fi.Permission), fi.Priority, fi.Comment)
+	return
+
 }
 
 func fileUpload(w http.ResponseWriter, r *http.Request) {
@@ -239,6 +311,13 @@ function mbar(sobj) {
 		window.location.replace(docurl);
 	}
 }
+
+function delete_confirm(url, msg) {
+	let res=confirm(msg);
+	if (res === true) {
+		window.location.href=url;
+	}
+}
 </script>
 `
 	if perWrite {
@@ -309,7 +388,10 @@ function mbar(sobj) {
 				pwd = "&pwd=y"
 			}
 			if def.DeleteButton {
-				Fprintf(w, `&nbsp;<a href="/del/path?p=%d%s" style="color:red;">DELETE</a>`, v.Pid, pwd)
+				Fprintf(w, `&nbsp;<a onclick="delete_confirm('/del/path?p=%d%s', '%d %s')" style="color:red;">DELETE</a>`, v.Pid, pwd, v.Pid, v.Title)
+			}
+			if def.EditButton {
+				Fprintf(w, `&nbsp;<a href="/page/update/info/path?p=%d%s" style="color:orange;">EDIT</a>`, v.Pid, pwd)
 			}
 		}
 		Fprint(w, fmt.Sprintf(`<br /><strong><a href="/?p=%d" style="color:blue;">%s</a></strong>`, v.Pid, v.Title))
@@ -317,16 +399,19 @@ function mbar(sobj) {
 	}
 	for _, v := range *fids {
 		Fprint(w, `<div style="margin: 4px; border-top:3px dashed grey">`)
-		Fprintf(w, `<a>[%s] ID:[%d] Created:[%s] Modified:[%s] Accessed:[%s] Views:[%d] Size:[%d]</a>`,
+		Fprintf(w, `<a>[%s] ID:[%d] Created:[%s] Modified:[%s] Accessed:[%s] Views:[%d] Priority:[%d] Size:[%s/%d]</a>`,
 			permission.ToString(v.Permission), v.Fid, TimeUnixFormat(v.Created), TimeUnixFormat(v.Modified),
-			TimeUnixFormat(v.Accessed), v.Views, v.Size)
+			TimeUnixFormat(v.Accessed), v.Views, v.Priority, fmt.Sprintf("%.2f", float32(v.Size)/1024.0/1024.0), v.Size)
 		if perWrite {
 			pwd := ""
 			if v.Permit(permission.WriteProtectedPwd) {
 				pwd = "&pwd=y"
 			}
 			if def.DeleteButton {
-				Fprintf(w, `&nbsp;<a href="/del/file?f=%d&p=%d%s" style="color:red;">DELETE</a>`, v.Fid, pid, pwd)
+				Fprintf(w, `&nbsp;<a onclick="delete_confirm('/del/file?f=%d&p=%d%s', '%d %s')" style="color:red;">DELETE</a>`, v.Fid, pid, pwd, v.Fid, v.Title)
+			}
+			if def.EditButton {
+				Fprintf(w, `&nbsp;<a href="/page/update/info/file?f=%d%s" style="color:orange;">EDIT</a>`, v.Fid, pwd)
 			}
 		}
 		Fprintf(w, `<br /><a>MD5: [%s]<br />SHA256: [%s]</a>`, v.MD5, v.SHA256)

@@ -20,6 +20,8 @@ func ParsePrefix() {
 	public["/login"] = login
 	protected["/file"] = fileGet
 	protected["/upload/file"] = fileUpload
+	protected["/update/info/file"] = fileInfoEdit
+	protected["/update/info/path"] = pathInfoEdit
 	protected["/path"] = pathAdd
 	protected["/del/path"] = pathDel
 	protected["/del/file"] = fileDel
@@ -30,6 +32,8 @@ func ParsePrefix() {
 	protected["/"] = fileIndex
 	protected["/page/upload/file"] = fileUploadPage
 	protected["/page/upload/path"] = pathUpload
+	protected["/page/update/info/file"] = fileInfoEditPage
+	protected["/page/update/info/path"] = pathInfoEditPage
 }
 
 type MyHandler struct{}

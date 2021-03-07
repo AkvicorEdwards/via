@@ -16,19 +16,19 @@ type Path struct {
 	Comment    string `json:"comment"`
 	Size       int64  `json:"size"`
 	Password   string
-	Permission int64  `json:"permission"`
-	Created    int64  `json:"created"`
-	Modified   int64  `json:"modified"`
-	Accessed   int64  `json:"accessed"`
-	Views      int64  `json:"views"`
+	Permission int64 `json:"permission"`
+	Created    int64 `json:"created"`
+	Modified   int64 `json:"modified"`
+	Accessed   int64 `json:"accessed"`
+	Views      int64 `json:"views"`
 }
 
 func (p *Path) Deny(per byte) bool {
-	return (p.Permission>>per)&1==0
+	return (p.Permission>>per)&1 == 0
 }
 
 func (p *Path) Permit(per byte) bool {
-	return (p.Permission>>per)&1==1
+	return (p.Permission>>per)&1 == 1
 }
 
 func (p *Path) GetPassword() string {
@@ -133,12 +133,33 @@ func AddPath(ppid int64, title, comment, password string, permission int64) bool
 	UpdateInc(TablePath, path.Pid)
 
 	res := db.Table(TablePath).Where("pid=?", ppid).UpdateColumns(map[string]interface{}{
-		"size":    gorm.Expr("size+1"),
+		"size": gorm.Expr("size+1"),
 	})
 	if res.Error != nil {
 		log.Println(res.Error)
 	}
 
+	return true
+}
+
+func UpdatePathInfo(ph *Path) bool {
+	if !Connected {
+		Connect()
+	}
+	lockPath.Lock()
+	defer lockPath.Unlock()
+
+	res := db.Table(TablePath).Where("pid=?", ph.Pid).UpdateColumns(map[string]interface{}{
+		"ppid":       ph.Ppid,
+		"title":      ph.Title,
+		"comment":    ph.Comment,
+		"size":       ph.Size,
+		"password":   ph.Password,
+		"permission": ph.Permission,
+	})
+	if res.Error != nil {
+		return false
+	}
 	return true
 }
 
@@ -260,7 +281,7 @@ func UpdateAddNewFile(pid int64) {
 	lockPath.Lock()
 	defer lockPath.Unlock()
 	res := db.Table(TablePath).Where("pid=?", pid).UpdateColumns(map[string]interface{}{
-		"size":    gorm.Expr("size+1"),
+		"size": gorm.Expr("size+1"),
 	})
 	if res.Error != nil {
 		log.Println(res.Error)
@@ -274,7 +295,7 @@ func UpdateDelFile(pid int64) {
 	lockPath.Lock()
 	defer lockPath.Unlock()
 	res := db.Table(TablePath).Where("pid=?", pid).UpdateColumns(map[string]interface{}{
-		"size":    gorm.Expr("size-1"),
+		"size": gorm.Expr("size-1"),
 	})
 	if res.Error != nil {
 		log.Println(res.Error)

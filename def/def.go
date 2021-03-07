@@ -17,6 +17,7 @@ var RecordEnable = true
 var RecordEnableFile = true
 
 var DeleteButton = true
+var EditButton = true
 
 var Username = "Akvicor"
 var Password = "password"

@@ -24,20 +24,20 @@ type File struct {
 	SHA256     string `json:"sha256"`
 	Size       int64  `json:"size"`
 	Password   string
-	Permission int64  `json:"permission"`
-	Created    int64  `json:"created"`
-	Modified   int64  `json:"modified"`
-	Accessed   int64  `json:"accessed"`
-	Views      int64  `json:"views"`
-	Priority   int64  `json:"priority"`
+	Permission int64 `json:"permission"`
+	Created    int64 `json:"created"`
+	Modified   int64 `json:"modified"`
+	Accessed   int64 `json:"accessed"`
+	Views      int64 `json:"views"`
+	Priority   int64 `json:"priority"`
 }
 
 func (f *File) Deny(p byte) bool {
-	return (f.Permission>>p)&1==0
+	return (f.Permission>>p)&1 == 0
 }
 
 func (f *File) Permit(p byte) bool {
-	return (f.Permission>>p)&1==1
+	return (f.Permission>>p)&1 == 1
 }
 
 func (f *File) GetPassword() string {
@@ -155,6 +155,29 @@ func AddFile(title, comment, md5, sha256, password string, filename, filepath, s
 	return file.Fid
 }
 
+func UpdateFileInfo(fi *File) bool {
+	if !Connected {
+		Connect()
+	}
+	lockFile.Lock()
+	defer lockFile.Unlock()
+
+	res := db.Table(TableFile).Where("fid=?", fi.Fid).UpdateColumns(map[string]interface{}{
+		"title":      fi.Title,
+		"comment":    fi.Comment,
+		"md5":        fi.MD5,
+		"sha256":     fi.SHA256,
+		"size":       fi.Size,
+		"password":   fi.Password,
+		"permission": fi.Permission,
+		"priority":   fi.Priority,
+	})
+	if res.Error != nil {
+		return false
+	}
+	return true
+}
+
 func CompleteDelFile(fid int64) bool {
 	if !Connected {
 		Connect()
@@ -260,7 +283,7 @@ func FileAccessed(fid int64) {
 	defer lockFile.Unlock()
 	res := db.Table(TableFile).Where("fid=?", fid).UpdateColumns(map[string]interface{}{
 		"accessed": UnixTime(),
-		"views":     gorm.Expr("views+1"),
+		"views":    gorm.Expr("views+1"),
 	})
 	if res.Error != nil {
 		log.Println(res.Error)

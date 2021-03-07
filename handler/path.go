@@ -2,7 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 	"via/db"
 	"via/permission"
 	"via/record"
@@ -38,6 +40,74 @@ func pathAdd(w http.ResponseWriter, r *http.Request) {
 			Fprint(w, TplConfirmRedirect("Failed", "history", "history"))
 		}
 	}
+}
+
+func pathInfoEdit(w http.ResponseWriter, r *http.Request) {
+	pid, err := strconv.ParseInt(r.FormValue("p"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	pathInfo := db.GetPathInfo(pid)
+	if pathInfo == nil {
+		log.Println(err)
+		return
+	}
+	res := WritePermit(w, r, pathInfo)
+	if res < 0 {
+		return
+	}
+	pathInfo.Ppid = Int64(r.FormValue("ppid"))
+	pathInfo.Title = r.FormValue("title")
+	pathInfo.Comment = r.FormValue("comment")
+	pathInfo.Size = Int64(r.FormValue("size"))
+	pathInfo.Password = r.FormValue("password")
+	pathInfo.Permission = permission.ParseString(r.FormValue("permission"))
+	if db.UpdatePathInfo(pathInfo) {
+		Fprint(w, TplRedirect("/"))
+	} else {
+		Fprint(w, TplConfirmRedirect("Failed", "/", "/"))
+	}
+	return
+}
+
+func pathInfoEditPage(w http.ResponseWriter, r *http.Request) {
+	pid, err := strconv.ParseInt(r.FormValue("p"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	ph := db.GetPathInfo(pid)
+	if ph == nil {
+		log.Println(err)
+		return
+	}
+	res := WritePermit(w, r, ph)
+	if res < 0 {
+		return
+	}
+	pwd := ""
+	if len(r.FormValue("pwd")) != 0 {
+		pwd = fmt.Sprintf(`<input type="hidden" name="pwd" value="%s">`, r.FormValue("pwd"))
+	}
+	tpl := `<!DOCTYPE html>
+<title>Path Info Update</title>
+
+<form action="/update/info/path" method="post">
+	<input type="hidden" name="p" value="%d">
+	%s
+	<label>PPID:<input type="number" name="ppid" value="%d"></label><br/><br/>
+	<label>Title:<input type="text" name="title" placeholder="Title" value="%s"></label><br/><br/>
+	<label>Size:<input type="number" name="size" placeholder="Size" value="%d"></label><br/><br/>
+	<label>Password:<input type="password" name="password" placeholder="Password" value="%s"></label><br/><br/>
+	<label>Permission:<input type="text" name="permission" placeholder="Root Public Private Protected Login" value="%s"></label><br/><br/>
+	<label><textarea name="comment" rows="10" cols="20">%s</textarea></label><br/><br/>
+	<input type="submit" value="Submit">
+</form>
+`
+	Fprintf(w, tpl, pid, pwd, ph.Ppid, ph.Title, ph.Size, ph.Password, permission.ToString(ph.Permission), ph.Comment)
+	return
+
 }
 
 func pathDel(w http.ResponseWriter, r *http.Request) {
