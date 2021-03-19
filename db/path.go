@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 	"gorm.io/gorm"
 	"log"
 	"sort"
@@ -300,4 +301,17 @@ func UpdateDelFile(pid int64) {
 	if res.Error != nil {
 		log.Println(res.Error)
 	}
+}
+
+func PathSearchByTitle(title string) *Paths {
+	if !Connected {
+		Connect()
+	}
+	paths := make(Paths, 0)
+	err := db.Table(TablePath).Where("title LIKE ?", fmt.Sprintf("%%%s%%", title)).Find(&paths).Error
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return &paths
 }

@@ -303,6 +303,47 @@ func FileSearchBySHA256(s6 string) *Files {
 	return &files
 }
 
+func FileSearchByMD5(m5 string) *Files {
+	if !Connected {
+		Connect()
+	}
+	files := make(Files, 0)
+	err := db.Table(TableFile).Where("md5 = ?", m5).Find(&files).Error
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return &files
+}
+
+func FileSearchByTitle(title string) *Files {
+	if !Connected {
+		Connect()
+	}
+	files := make(Files, 0)
+	err := db.Table(TableFile).Where("title LIKE ?", fmt.Sprintf("%%%s%%", title)).Find(&files).Error
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return &files
+}
+
+func FileExist(m5, s6 string) *Files {
+	if !Connected {
+		Connect()
+	}
+	files := make(Files, 0)
+	err := db.Table(TableFile).Where("md5 = ? AND sha256 = ?", m5, s6).Find(&files).Error
+	if err != nil {
+		return nil
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	return &files
+}
+
 func VerifyMD5(fid int64) bool {
 	if !Connected {
 		Connect()

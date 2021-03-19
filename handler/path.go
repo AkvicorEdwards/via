@@ -63,10 +63,11 @@ func pathInfoEdit(w http.ResponseWriter, r *http.Request) {
 	pathInfo.Size = Int64(r.FormValue("size"))
 	pathInfo.Password = r.FormValue("password")
 	pathInfo.Permission = permission.ParseString(r.FormValue("permission"))
+	ul := fmt.Sprintf("/?p=%d", pathInfo.Ppid)
 	if db.UpdatePathInfo(pathInfo) {
-		Fprint(w, TplRedirect("/"))
+		Fprint(w, TplRedirect(ul))
 	} else {
-		Fprint(w, TplConfirmRedirect("Failed", "/", "/"))
+		Fprint(w, TplConfirmRedirect("Failed", "history", ul))
 	}
 	return
 }

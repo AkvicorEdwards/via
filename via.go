@@ -78,11 +78,15 @@ func EnableOption() {
 		return nil
 	})
 	option("-button-delete", 0, func(str []string) error {
-		def.DeleteButton = false
+		def.DeleteButton = !def.DeleteButton
 		return nil
 	})
 	option("-button-edit", 0, func(str []string) error {
-		def.EditButton = false
+		def.EditButton = !def.EditButton
+		return nil
+	})
+	option("-button-update", 0, func(str []string) error {
+		def.UpdateButton = !def.UpdateButton
 		return nil
 	})
 	option("-record-off", 0, func(str []string) error {

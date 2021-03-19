@@ -20,6 +20,7 @@ func ParsePrefix() {
 	public["/login"] = login
 	protected["/file"] = fileGet
 	protected["/upload/file"] = fileUpload
+	//protected["/update/file"] = fileUpdate
 	protected["/update/info/file"] = fileInfoEdit
 	protected["/update/info/path"] = pathInfoEdit
 	protected["/path"] = pathAdd
@@ -31,6 +32,7 @@ func ParsePrefix() {
 	public["/page/login"] = loginPage
 	protected["/"] = fileIndex
 	protected["/page/upload/file"] = fileUploadPage
+	protected["/page/update/file"] = fileUpdatePage
 	protected["/page/upload/path"] = pathUpload
 	protected["/page/update/info/file"] = fileInfoEditPage
 	protected["/page/update/info/path"] = pathInfoEditPage
@@ -62,7 +64,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	url := r.FormValue("url")
-	if len(url) == 0 {
+	if len(url) == 0 || url=="/?" || url=="?" {
 		url = "/"
 	}
 	if username == def.Username && password == def.Password {
