@@ -178,6 +178,27 @@ func UpdateFileInfo(fi *File) bool {
 	return true
 }
 
+// TODO
+func CompleteDeleteFile(fid int64) bool {
+	return false
+}
+
+func DeleteFileFromAllPath(fid int64) bool {
+	return false
+}
+
+func DeleteFileFromPath(fid, pid int64) bool {
+	return false
+}
+
+func EraseAndUpdate(fid int64) bool {
+	return false
+}
+
+func Update(fid, filepath int64) bool {
+	return false
+}
+
 func CompleteDelFile(fid int64) bool {
 	if !Connected {
 		Connect()
@@ -214,7 +235,6 @@ func GetFileInfo(fid int64) *File {
 	file := &File{}
 	err := db.Table(TableFile).Where("fid=?", fid).First(file).Error
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 

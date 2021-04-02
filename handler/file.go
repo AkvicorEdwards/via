@@ -489,7 +489,7 @@ function delete_confirm(url, msg) {
 			pid, pwd, pid, pwd)
 	}
 	tplHead += `<h4><input type="text" id="search_val">&nbsp;&nbsp;&nbsp;<select name="search" id="search">` +
-		`<option value="title">Title</option><option value="sha256">SHA256</option>` +
+		`<option value="title">Title</option><option value="id">ID</option><option value="sha256">SHA256</option>` +
 		`<option value="md5">MD5</option></select>&nbsp;&nbsp;&nbsp;<a style="color:black;" ` +
 		`onclick="window.location.href='/search/file?search='+document.getElementById('search').value+` +
 		`'&val='+document.getElementById('search_val').value;">Search</a></h4>`
@@ -607,7 +607,7 @@ function getQueryVariable(variable) {
 </script>
 <h4>
 	<input type="text" id="search_val">&nbsp;&nbsp;&nbsp;<select name="search" id="search">
-	<option value="title">Title</option><option value="sha256">SHA256</option>
+	<option value="title">Title</option><option value="id">ID</option><option value="sha256">SHA256</option>
 	<option value="md5">MD5</option></select>&nbsp;&nbsp;&nbsp;
 	<a style="color:black;" onclick="window.location.href='/search/file?` +
 		`search='+document.getElementById('search').value+'&val='+document.getElementById('search_val').value;">Search</a>
@@ -706,6 +706,11 @@ func fileSearch(w http.ResponseWriter, r *http.Request) {
 	var files *db.Files
 	var paths *db.Paths
 	switch r.FormValue("search") {
+	case "id":
+		file := db.GetFileInfo(Int64(r.FormValue("val")))
+		if file != nil {
+			files = &db.Files{*file}
+		}
 	case "title":
 		files = db.FileSearchByTitle(r.FormValue("val"))
 		paths = db.PathSearchByTitle(r.FormValue("val"))
